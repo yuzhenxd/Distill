@@ -1,0 +1,99 @@
+name: Build desktop apps
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: MeetingFlowAI-windows-x64.zip
+          - os: macos-latest
+            artifact: MeetingFlowAI-macos-arm64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build (Windows, single exe)
+        if: runner.os == 'Windows'
+        run: pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" main.py
+
+      - name: Build (macOS, .app)
+        if: runner.os == 'macOS'
+        run: pyinstaller --noconfirm --windowed --name "MeetingFlow AI" --osx-bundle-identifier ai.meetingflow.desktop main.py
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $p = Start-Process -FilePath "dist/MeetingFlow AI.exe" -PassThru
+          Start-Sleep -Seconds 25
+          if ($p.HasExited) { throw "App exited early with code $($p.ExitCode)" }
+          Stop-Process -Id $p.Id -Force
+          Get-Process -Name "MeetingFlow AI" -ErrorAction SilentlyContinue | Stop-Process -Force
+          Write-Host "Smoke test passed."
+
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          "dist/MeetingFlow AI.app/Contents/MacOS/MeetingFlow AI" > app.log 2>&1 &
+          PID=$!
+          sleep 20
+          if ! kill -0 $PID 2>/dev/null; then cat app.log; echo "App exited early"; exit 1; fi
+          kill $PID
+          echo "Smoke test passed."
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path "dist/MeetingFlow AI.exe" -DestinationPath "${{ matrix.artifact }}"
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent "dist/MeetingFlow AI.app" "${{ matrix.artifact }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}" artifacts/*.zip
+          --repo "${{ github.repository }}"
+          --title "MeetingFlow AI Desktop ${{ github.ref_name }}"
+          --notes "PySide6 原生桌面版。Windows 解压后双击 MeetingFlow AI.exe；macOS（Apple 芯片）解压后右键「打开」MeetingFlow AI.app。"
