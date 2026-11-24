@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from PySide6.QtCore import Signal
@@ -15,7 +14,7 @@ from .widgets import EmptyState, Page, card, clear_layout, label
 FORMATS = [
     ("json", "JSON", ".json", "JSON 文件 (*.json)"),
     ("md", "Markdown", ".md", "Markdown 文件 (*.md)"),
-    ("feishu", "飞书消息", ".json", "JSON 文件 (*.json)"),
+    ("feishu", "飞书消息", "", ""),  # 只推送到群，不另存为文件
 ]
 
 
@@ -47,8 +46,6 @@ class ExportPage(QWidget):
     def _content(self) -> str:
         if self.fmt == "md":
             return to_markdown(self.meeting)
-        if self.fmt == "feishu":
-            return json.dumps(to_feishu_post(self.meeting), ensure_ascii=False, indent=2)
         return to_json(self.meeting)
 
     def refresh(self) -> None:
@@ -72,6 +69,24 @@ class ExportPage(QWidget):
         tabs.addStretch()
         body.addLayout(tabs)
 
+        if self.fmt == "feishu":  # 飞书只推送到群，不预览、不另存
+            frame, lay = card()
+            lay.addWidget(label(tr("推送到飞书群"), "H3"))
+            lay.addWidget(label(tr("在飞书群设置 → 群机器人 → 添加「自定义机器人」，复制 Webhook 地址粘贴到下方。"), "Muted", wrap=True))
+            row = QHBoxLayout()
+            self.webhook_edit = QLineEdit(self.webhook)
+            self.webhook_edit.setPlaceholderText("https://open.feishu.cn/open-apis/bot/v2/hook/…")
+            self.webhook_edit.editingFinished.connect(self._webhook_edited)
+            self.push_btn = QPushButton(tr("推送"))
+            self.push_btn.setObjectName("Primary")
+            self.push_btn.clicked.connect(self._push)
+            row.addWidget(self.webhook_edit, 1)
+            row.addWidget(self.push_btn)
+            lay.addLayout(row)
+            body.addWidget(frame)
+            body.addStretch()
+            return
+
         frame, lay = card()
         preview = QPlainTextEdit(self._content())
         preview.setReadOnly(True)
@@ -94,22 +109,6 @@ class ExportPage(QWidget):
         actions.addWidget(copy)
         actions.addWidget(save)
         body.addLayout(actions)
-
-        if self.fmt == "feishu":
-            frame, lay = card()
-            lay.addWidget(label(tr("推送到飞书群"), "H3"))
-            lay.addWidget(label(tr("在飞书群设置 → 群机器人 → 添加「自定义机器人」，复制 Webhook 地址粘贴到下方。"), "Muted", wrap=True))
-            row = QHBoxLayout()
-            self.webhook_edit = QLineEdit(self.webhook)
-            self.webhook_edit.setPlaceholderText("https://open.feishu.cn/open-apis/bot/v2/hook/…")
-            self.webhook_edit.editingFinished.connect(self._webhook_edited)
-            self.push_btn = QPushButton(tr("推送"))
-            self.push_btn.setObjectName("Primary")
-            self.push_btn.clicked.connect(self._push)
-            row.addWidget(self.webhook_edit, 1)
-            row.addWidget(self.push_btn)
-            lay.addLayout(row)
-            body.addWidget(frame)
         body.addStretch()
 
     def _switch(self, key: str) -> None:
@@ -122,9 +121,8 @@ class ExportPage(QWidget):
 
     def _save(self) -> None:
         _, name, ext, flt = next(f for f in FORMATS if f[0] == self.fmt)
-        suffix = "_feishu" if self.fmt == "feishu" else ""
         safe = "".join(c for c in self.meeting["title"] if c not in '\\/:*?"<>|').strip() or "meeting"
-        default = str(Path.home() / f"{safe}{suffix}{ext}")
+        default = str(Path.home() / f"{safe}{ext}")
         path, _ = QFileDialog.getSaveFileName(self, tr("导出 {name}", name=tr(name)), default, tr(flt))
         if path:
             Path(path).write_text(self._content(), "utf-8")
