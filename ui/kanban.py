@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
+from core.i18n import tr
 from core.llm import PRIORITIES, STATUSES, new_task
 from .styles import STATUS_COLORS
 from .widgets import EmptyState, Page, badge, clear_layout, label, priority_badge
@@ -14,17 +15,17 @@ STATUS_TITLES = {"To Do": "待办 To Do", "In Progress": "进行中 In Progress"
 class TaskDialog(QDialog):
     def __init__(self, parent=None, default_status: str = "To Do"):
         super().__init__(parent)
-        self.setWindowTitle("新增任务")
+        self.setWindowTitle(tr("新增任务"))
         self.setMinimumWidth(420)
         form = QFormLayout(self)
         form.setContentsMargins(24, 22, 24, 18)
         form.setVerticalSpacing(12)
 
         self.title = QLineEdit()
-        self.title.setPlaceholderText("例如：整理 v1.2 需求文档")
+        self.title.setPlaceholderText(tr("例如：整理 v1.2 需求文档"))
         self.assignee = QLineEdit()
-        self.assignee.setPlaceholderText("待定")
-        self.no_deadline = QCheckBox("暂不设定")
+        self.assignee.setPlaceholderText(tr("待定"))
+        self.no_deadline = QCheckBox(tr("暂不设定"))
         self.deadline = QDateEdit(QDate.currentDate().addDays(7))
         self.deadline.setCalendarPopup(True)
         self.deadline.setDisplayFormat("yyyy-MM-dd")
@@ -33,22 +34,23 @@ class TaskDialog(QDialog):
         dl_row.addWidget(self.deadline, 1)
         dl_row.addWidget(self.no_deadline)
         self.priority = QComboBox()
-        self.priority.addItems(PRIORITIES)
-        self.priority.setCurrentText("中")
+        for p in PRIORITIES:  # 显示译名，保存时仍取「高 / 中 / 低」
+            self.priority.addItem(tr(p), p)
+        self.priority.setCurrentIndex(self.priority.findData("中"))
         self.status = QComboBox()
         self.status.addItems(STATUSES)
         self.status.setCurrentText(default_status)
 
-        form.addRow("任务内容", self.title)
-        form.addRow("负责人", self.assignee)
-        form.addRow("截止时间", dl_row)
-        form.addRow("优先级", self.priority)
-        form.addRow("状态", self.status)
+        form.addRow(tr("任务内容"), self.title)
+        form.addRow(tr("负责人"), self.assignee)
+        form.addRow(tr("截止时间"), dl_row)
+        form.addRow(tr("优先级"), self.priority)
+        form.addRow(tr("状态"), self.status)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.button(QDialogButtonBox.Ok).setText("添加")
+        buttons.button(QDialogButtonBox.Ok).setText(tr("添加"))
         buttons.button(QDialogButtonBox.Ok).setObjectName("Primary")
-        buttons.button(QDialogButtonBox.Cancel).setText("取消")
+        buttons.button(QDialogButtonBox.Cancel).setText(tr("取消"))
         buttons.accepted.connect(self._accept)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)
@@ -56,7 +58,7 @@ class TaskDialog(QDialog):
     def _accept(self) -> None:
         if not self.title.text().strip():
             self.title.setFocus()
-            self.title.setPlaceholderText("任务内容不能为空")
+            self.title.setPlaceholderText(tr("任务内容不能为空"))
             return
         self.accept()
 
@@ -64,7 +66,7 @@ class TaskDialog(QDialog):
         deadline = "" if self.no_deadline.isChecked() else self.deadline.date().toString("yyyy-MM-dd")
         return new_task(
             self.title.text(), self.assignee.text(), deadline,
-            self.priority.currentText(), self.status.currentText(),
+            self.priority.currentData(), self.status.currentText(),
         )
 
 
@@ -86,7 +88,7 @@ class TaskCard(QFrame):
         top.addStretch()
         delete = QPushButton("✕")
         delete.setObjectName("Danger")
-        delete.setToolTip("删除任务")
+        delete.setToolTip(tr("删除任务"))
         delete.setCursor(Qt.PointingHandCursor)
         delete.clicked.connect(lambda: self.delete_requested.emit(tid))
         top.addWidget(delete)
@@ -95,13 +97,13 @@ class TaskCard(QFrame):
         title = label(task["task_title"], "Body", wrap=True)
         title.setStyleSheet("font-weight: 600;")
         if task["source_quote"]:
-            title.setToolTip(f"原文：“{task['source_quote']}”")
+            title.setToolTip(tr("原文：“{quote}”", quote=task["source_quote"]))
         lay.addWidget(title)
 
         meta = QHBoxLayout()
         meta.setSpacing(6)
-        meta.addWidget(badge(f"👤 {task['assignee']}", "#3D3B35", "#EFEDE6"))
-        meta.addWidget(label(f"📅 {task['deadline']}", "Small"))
+        meta.addWidget(badge(f"👤 {tr(task['assignee'])}", "neutral"))
+        meta.addWidget(label(f"📅 {tr(task['deadline'])}", "Small"))
         meta.addStretch()
         lay.addLayout(meta)
 
@@ -138,18 +140,19 @@ class KanbanPage(QWidget):
         body = self.page.body
         clear_layout(body)
         if self.meeting is None:
-            body.addWidget(EmptyState("📋", "还没有打开任何会议", "先在「新建会议解析」中解析一场会议，或从左侧历史记录中选择。"))
+            body.addWidget(EmptyState("📋", tr("还没有打开任何会议"), tr("先在「会议」中解析一场会议，或从左侧历史记录中选择。")))
             body.addStretch()
             return
 
         head = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(4)
-        titles.addWidget(label("智能任务看板", "H2"))
+        titles.addWidget(label(tr("智能任务看板"), "H2"))
         done = sum(t["status"] == "Done" for t in self.tasks)
-        titles.addWidget(label(f"{self.meeting['title']} · 共 {len(self.tasks)} 项，已完成 {done} 项", "Muted"))
+        titles.addWidget(label(tr("{title} · 共 {n} 项，已完成 {done} 项",
+                                  title=self.meeting["title"], n=len(self.tasks), done=done), "Muted"))
         head.addLayout(titles, 1)
-        add = QPushButton("＋ 新增任务")
+        add = QPushButton(tr("＋ 新增任务"))
         add.setObjectName("Primary")
         add.clicked.connect(lambda: self._add_task("To Do"))
         head.addWidget(add, 0, Qt.AlignTop)
@@ -175,7 +178,7 @@ class KanbanPage(QWidget):
         dot = label("●")
         dot.setStyleSheet(f"color: {STATUS_COLORS[status]}; font-size: 12px;")
         hdr.addWidget(dot)
-        hdr.addWidget(label(STATUS_TITLES[status], "H3"))
+        hdr.addWidget(label(tr(STATUS_TITLES[status]), "H3"))
         hdr.addWidget(label(str(len(items)), "Small"))
         hdr.addStretch()
         lay.addLayout(hdr)
@@ -183,9 +186,10 @@ class KanbanPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }")
+        scroll.setStyleSheet("QScrollArea, QScrollArea > QWidget#qt_scrollarea_viewport { background: transparent; }")
         inner = QWidget()
-        inner.setStyleSheet("background: transparent;")
+        inner.setObjectName("ColumnInner")
+        inner.setStyleSheet("QWidget#ColumnInner { background: transparent; }")  # 只作用于自身，否则会盖掉卡片里标签的底色
         il = QVBoxLayout(inner)
         il.setContentsMargins(0, 0, 4, 0)
         il.setSpacing(10)
@@ -198,7 +202,7 @@ class KanbanPage(QWidget):
         scroll.setWidget(inner)
         lay.addWidget(scroll, 1)
 
-        add = QPushButton("＋ 添加")
+        add = QPushButton(tr("＋ 添加"))
         add.setObjectName("Ghost")
         add.clicked.connect(lambda: self._add_task(status))
         lay.addWidget(add, 0, Qt.AlignLeft)
@@ -213,7 +217,7 @@ class KanbanPage(QWidget):
 
     def _delete(self, tid: str) -> None:
         t = self._find(tid)
-        if QMessageBox.question(self, "删除任务", f"确定删除任务「{t['task_title']}」吗？") == QMessageBox.Yes:
+        if QMessageBox.question(self, tr("删除任务"), tr("确定删除任务「{title}」吗？", title=t["task_title"])) == QMessageBox.Yes:
             self.tasks.remove(t)
             self._changed()
 

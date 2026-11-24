@@ -34,11 +34,15 @@ jobs:
 
       - name: Build (Windows, single exe)
         if: runner.os == 'Windows'
-        run: pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" main.py
+        run: pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" --icon assets/icon.ico --add-data "assets/icon.png:assets" main.py
 
       - name: Build (macOS, .app)
         if: runner.os == 'macOS'
-        run: pyinstaller --noconfirm --windowed --name "MeetingFlow AI" --osx-bundle-identifier ai.meetingflow.desktop main.py
+        run: |
+          pyinstaller --noconfirm --windowed --name "MeetingFlow AI" --icon assets/icon.icns --add-data "assets/icon.png:assets" --osx-bundle-identifier ai.meetingflow.desktop main.py
+          # 没有麦克风用途说明时 macOS 不弹权限窗口，录到的全是静音；改了 Info.plist 要重新签名
+          plutil -insert NSMicrophoneUsageDescription -string "MeetingFlow AI 需要使用麦克风进行实时转写与翻译。" "dist/MeetingFlow AI.app/Contents/Info.plist"
+          codesign --force --deep --sign - "dist/MeetingFlow AI.app"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'

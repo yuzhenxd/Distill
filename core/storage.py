@@ -51,8 +51,13 @@ class MeetingStore:
 
     def update(self, meeting: dict) -> None:
         self.conn.execute(
-            "UPDATE meetings SET title = ?, result = ? WHERE id = ?",
-            (meeting["title"], json.dumps(meeting["result"], ensure_ascii=False), meeting["id"]),
+            "UPDATE meetings SET title = ?, transcript = ?, result = ? WHERE id = ?",
+            (
+                meeting["title"],
+                meeting["transcript"],
+                json.dumps(meeting["result"], ensure_ascii=False),
+                meeting["id"],
+            ),
         )
         self.conn.commit()
 

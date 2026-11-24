@@ -9,6 +9,7 @@ import openai
 from openai import OpenAI
 
 from .config import Settings
+from .i18n import tr
 
 PRIORITIES = ("高", "中", "低")
 STATUSES = ("To Do", "In Progress", "Done")
@@ -52,7 +53,7 @@ def make_client(s: Settings) -> tuple[OpenAI, str]:
         return OpenAI(base_url=s.ollama_base_url, api_key="ollama", timeout=300), s.ollama_model
     key = s.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
     if not key:
-        raise LLMError("尚未配置 DeepSeek API Key，请前往「模型与 API 设置」填写。")
+        raise LLMError(tr("尚未配置 DeepSeek API Key，请前往「设置」填写。"))
     return OpenAI(base_url=s.deepseek_base_url, api_key=key, timeout=180), s.deepseek_model
 
 
@@ -61,16 +62,16 @@ def _chat(s: Settings, messages: list[dict], **kwargs) -> str:
     try:
         resp = client.chat.completions.create(model=model, messages=messages, **kwargs)
     except openai.AuthenticationError:
-        raise LLMError("API Key 无效或已过期，请在设置页检查。") from None
+        raise LLMError(tr("API Key 无效或已过期，请在设置页检查。")) from None
     except openai.APITimeoutError:  # 是 APIConnectionError 的子类，必须先捕获
-        raise LLMError("模型响应超时，请稍后重试。") from None
+        raise LLMError(tr("模型响应超时，请稍后重试。")) from None
     except openai.APIConnectionError:
-        where = "本地 Ollama（请确认已运行 ollama serve）" if s.provider == "ollama" else "DeepSeek 服务"
-        raise LLMError(f"无法连接到{where}，请检查网络或服务地址。") from None
+        where = tr("本地 Ollama（请确认已运行 ollama serve）" if s.provider == "ollama" else "DeepSeek 服务")
+        raise LLMError(tr("无法连接到{where}，请检查网络或服务地址。", where=where)) from None
     except openai.NotFoundError:
-        raise LLMError(f"模型「{model}」不存在，请在设置页确认模型名称。") from None
+        raise LLMError(tr("模型「{model}」不存在，请在设置页确认模型名称。", model=model)) from None
     except openai.APIStatusError as e:
-        raise LLMError(f"模型服务返回错误（HTTP {e.status_code}）：{e.message}") from None
+        raise LLMError(tr("模型服务返回错误（HTTP {code}）：{message}", code=e.status_code, message=e.message)) from None
     return resp.choices[0].message.content or ""
 
 
@@ -87,10 +88,25 @@ def analyze_transcript(text: str, s: Settings) -> dict:
     return normalize_result(_parse_json(content))
 
 
+TRANSLATE_PROMPT = """你是会议同声传译。把用户发来的一段会议发言翻译成{target}，只输出译文，不要解释，不要加引号。
+发言来自语音识别，可能有错字或断句不完整，请结合前文合理理解。若原文已经是{target}，原样输出。"""
+
+
+def translate(text: str, target: str, context: list[str], s: Settings) -> str:
+    system = TRANSLATE_PROMPT.replace("{target}", target)
+    if context:
+        system += "\n\n前文（仅供理解，不要翻译）：\n" + "\n".join(context)
+    return _chat(
+        s,
+        [{"role": "system", "content": system}, {"role": "user", "content": text}],
+        temperature=0.3,
+    ).strip()
+
+
 def test_connection(s: Settings) -> str:
     _chat(s, [{"role": "user", "content": "ping"}], max_tokens=5)
     model = s.ollama_model if s.provider == "ollama" else s.deepseek_model
-    return f"连接成功：{model}"
+    return tr("连接成功：{model}", model=model)
 
 
 def list_ollama_models(base_url: str) -> list[str]:
@@ -99,7 +115,7 @@ def list_ollama_models(base_url: str) -> list[str]:
         with urllib.request.urlopen(f"{root}/api/tags", timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except OSError:
-        raise LLMError("无法连接本地 Ollama，请先运行 ollama serve。") from None
+        raise LLMError(tr("无法连接本地 Ollama，请先运行 ollama serve。")) from None
     return [m["name"] for m in data.get("models", [])]
 
 
@@ -113,7 +129,7 @@ def _parse_json(content: str) -> dict:
         except json.JSONDecodeError:
             data = None
     if not isinstance(data, dict):
-        raise LLMError("模型返回的内容不是合法 JSON，请重试或更换模型。")
+        raise LLMError(tr("模型返回的内容不是合法 JSON，请重试或更换模型。"))
     return data
 
 

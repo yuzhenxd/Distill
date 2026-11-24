@@ -1,6 +1,8 @@
 import json
 import urllib.request
 
+from .i18n import tr
+
 
 def to_json(meeting: dict) -> str:
     r = meeting["result"]
@@ -85,8 +87,9 @@ def push_feishu(webhook: str, payload: dict) -> str:
         with urllib.request.urlopen(req, timeout=15) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except OSError as e:
-        raise RuntimeError(f"无法连接飞书：{e}") from None
+        raise RuntimeError(tr("无法连接飞书：{error}", error=e)) from None
     code = body.get("code", body.get("StatusCode", 0))
     if code != 0:
-        raise RuntimeError(f"飞书返回错误（{code}）：{body.get('msg') or body.get('StatusMessage')}")
-    return "已推送到飞书群"
+        raise RuntimeError(tr("飞书返回错误（{code}）：{message}", code=code,
+                              message=body.get("msg") or body.get("StatusMessage")))
+    return tr("已推送到飞书群")

@@ -3,9 +3,10 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from .styles import PRIORITY_COLORS
+from core.i18n import tr
 
 MAX_CONTENT_WIDTH = 920
+PRIORITY_KINDS = {"高": "high", "中": "mid", "低": "low"}
 
 
 def label(text: str, name: str = "", wrap: bool = False, selectable: bool = False) -> QLabel:
@@ -38,17 +39,16 @@ def clear_layout(layout) -> None:
             clear_layout(item.layout())
 
 
-def badge(text: str, fg: str, bg: str) -> QLabel:
+def badge(text: str, kind: str) -> QLabel:
+    """kind 取 high / mid / low / neutral，颜色由全局样式表按配色方案决定。"""
     w = QLabel(text)
-    w.setStyleSheet(
-        f"color: {fg}; background: {bg}; border-radius: 9px; padding: 2px 8px; font-size: 12px;"
-    )
+    w.setObjectName("Badge")
+    w.setProperty("kind", kind)
     return w
 
 
 def priority_badge(priority: str) -> QLabel:
-    fg, bg = PRIORITY_COLORS.get(priority, PRIORITY_COLORS["中"])
-    return badge(f"{priority}优先级", fg, bg)
+    return badge(tr("{p}优先级", p=tr(priority)), PRIORITY_KINDS.get(priority, "mid"))
 
 
 class Page(QScrollArea):

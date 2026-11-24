@@ -15,7 +15,7 @@
 - **Windows**：`MeetingFlowAI-windows-x64.zip`，解压后双击 `MeetingFlow AI.exe`。首次运行若出现 SmartScreen 提示，点「更多信息 → 仍要运行」。
 - **macOS（Apple 芯片）**：`MeetingFlowAI-macos-arm64.zip`，解压后在 `MeetingFlow AI.app` 上右键选「打开」。应用未签名，若提示「已损坏」，执行 `xattr -cr "/Applications/MeetingFlow AI.app"`。
 
-打开后在「模型与 API 设置」里填写 DeepSeek API Key，或切换到本地 Ollama。
+打开后在「设置」里填写 DeepSeek API Key，或切换到本地 Ollama。
 
 ## 从源码运行
 
@@ -30,10 +30,10 @@ python main.py
 
 ```bash
 # macOS：生成 dist/MeetingFlow AI.app
-pyinstaller --noconfirm --windowed --name "MeetingFlow AI" main.py
+pyinstaller --noconfirm --windowed --name "MeetingFlow AI" --icon assets/icon.icns --add-data "assets/icon.png:assets" main.py
 
 # Windows：生成单文件 dist\MeetingFlow AI.exe
-pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" main.py
+pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" --icon assets/icon.ico --add-data "assets/icon.png:assets" main.py
 ```
 
 推送 `desktop-v*` 标签（如 `git tag desktop-v1.0.0 && git push origin desktop-v1.0.0`）会触发 GitHub Actions，在 Windows 和 macOS 上各打一份包并发布到 Release。

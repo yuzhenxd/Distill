@@ -6,7 +6,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
+from core.i18n import tr
 from core.transcriber import AUDIO_EXTS, TEXT_EXTS
+from .live_page import segment_widget
 from .styles import STATUS_COLORS
 from .widgets import Page, card, clear_layout, label, priority_badge
 
@@ -29,8 +31,8 @@ class DropZone(QFrame):
         layout.addStretch()
         for text, name, style in (
             ("⬆", "", "font-size: 34px; color: #D97757;"),
-            ("拖拽会议录音或文本到这里", "H3", ""),
-            ("或点击选择文件 · 支持 .mp3 / .wav / .m4a / .txt / .md", "Muted", ""),
+            (tr("拖拽会议录音或文本到这里"), "H3", ""),
+            (tr("或点击选择文件 · 支持 .mp3 / .wav / .m4a / .txt / .md"), "Muted", ""),
         ):
             w = label(text, name)
             w.setAlignment(Qt.AlignCenter)
@@ -46,7 +48,7 @@ class DropZone(QFrame):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
-            path, _ = QFileDialog.getOpenFileName(self, "选择会议文件", "", FILE_FILTER)
+            path, _ = QFileDialog.getOpenFileName(self, tr("选择会议文件"), "", tr(FILE_FILTER))
             if path:
                 self.file_dropped.emit(path)
 
@@ -67,7 +69,7 @@ class DropZone(QFrame):
         if Path(path).suffix.lower() in SUPPORTED:
             self.file_dropped.emit(path)
         else:
-            self.rejected.emit(f"不支持的文件格式：{Path(path).name}")
+            self.rejected.emit(tr("不支持的文件格式：{name}", name=Path(path).name))
 
 
 class NewMeetingPage(QStackedWidget):
@@ -87,9 +89,9 @@ class NewMeetingPage(QStackedWidget):
         page = Page()
         body = page.body
         body.addStretch(2)
-        title = label("今天要整理哪场会议？", "H1")
+        title = label(tr("今天要整理哪场会议？"), "H1")
         title.setAlignment(Qt.AlignCenter)
-        sub = label("上传录音或会议文本，MeetingFlow 会为你提炼摘要、关键决策，并把行动项排进任务看板。", "Muted", wrap=True)
+        sub = label(tr("上传录音或会议文本，MeetingFlow 会为你提炼摘要、关键决策，并把行动项排进任务看板。"), "Muted", wrap=True)
         sub.setAlignment(Qt.AlignCenter)
         body.addWidget(title)
         body.addWidget(sub)
@@ -101,7 +103,7 @@ class NewMeetingPage(QStackedWidget):
 
         row = QHBoxLayout()
         row.addStretch()
-        self.demo_btn = QPushButton("⚡ 加载内置演示会议")
+        self.demo_btn = QPushButton(tr("⚡ 加载内置演示会议"))
         self.demo_btn.setObjectName("Pill")
         self.demo_btn.setCursor(Qt.PointingHandCursor)
         self.demo_btn.clicked.connect(self.demo_requested.emit)
@@ -133,7 +135,7 @@ class NewMeetingPage(QStackedWidget):
         self.progress_box.setVisible(busy)
         if busy:
             self.setCurrentIndex(0)
-            self.set_progress(0, "准备中…")
+            self.set_progress(0, tr("准备中…"))
 
     def set_progress(self, pct: int, message: str) -> None:
         self.progress_label.setText(message)
@@ -158,30 +160,30 @@ class NewMeetingPage(QStackedWidget):
         head.addWidget(label(meeting["title"], "H2", wrap=True))
         head.addWidget(label(f"{meeting['created_at']} · {meeting['source']}", "Small"))
         top.addLayout(head, 1)
-        new_btn = QPushButton("＋ 新建解析")
+        new_btn = QPushButton(tr("＋ 新建解析"))
         new_btn.clicked.connect(self.show_upload)
         top.addWidget(new_btn, 0, Qt.AlignTop)
         body.addLayout(top)
         body.addSpacing(4)
 
         frame, lay = card()
-        lay.addWidget(label("会议摘要", "H3"))
-        lay.addWidget(label(r["meeting_summary"] or "（模型未给出摘要）", "Body", wrap=True, selectable=True))
+        lay.addWidget(label(tr("会议摘要"), "H3"))
+        lay.addWidget(label(r["meeting_summary"] or tr("（模型未给出摘要）"), "Body", wrap=True, selectable=True))
         body.addWidget(frame)
 
         frame, lay = card()
-        lay.addWidget(label("关键决策", "H3"))
+        lay.addWidget(label(tr("关键决策"), "H3"))
         for i, d in enumerate(r["key_decisions"], 1):
             lay.addWidget(label(f"{i}.  {d}", "Body", wrap=True, selectable=True))
         if not r["key_decisions"]:
-            lay.addWidget(label("（无）", "Muted"))
+            lay.addWidget(label(tr("（无）"), "Muted"))
         body.addWidget(frame)
 
         frame, lay = card()
         hdr = QHBoxLayout()
-        hdr.addWidget(label(f"行动项 · {len(r['action_items'])}", "H3"))
+        hdr.addWidget(label(tr("行动项 · {n}", n=len(r["action_items"])), "H3"))
         hdr.addStretch()
-        board_btn = QPushButton("在任务看板中管理 →")
+        board_btn = QPushButton(tr("在任务看板中管理 →"))
         board_btn.setObjectName("Primary")
         board_btn.clicked.connect(self.open_board.emit)
         hdr.addWidget(board_btn)
@@ -189,10 +191,18 @@ class NewMeetingPage(QStackedWidget):
         for t in r["action_items"]:
             lay.addWidget(self._task_row(t))
         if not r["action_items"]:
-            lay.addWidget(label("会议中没有识别到明确的行动项。", "Muted"))
+            lay.addWidget(label(tr("会议中没有识别到明确的行动项。"), "Muted"))
         body.addWidget(frame)
 
-        export_btn = QPushButton("📤 导出与同步")
+        if r.get("live_segments"):  # 实时翻译记录的会议：附上逐段原文与译文
+            frame, lay = card()
+            lay.setSpacing(0)
+            lay.addWidget(label(tr("原文与译文 · 译为 {target}", target=r.get("translate_target", "")), "H3"))
+            for seg in r["live_segments"]:
+                lay.addWidget(segment_widget(seg))
+            body.addWidget(frame)
+
+        export_btn = QPushButton(tr("📤 导出与同步"))
         export_btn.setObjectName("Ghost")
         export_btn.clicked.connect(self.open_export.emit)
         body.addWidget(export_btn, 0, Qt.AlignLeft)
@@ -203,7 +213,6 @@ class NewMeetingPage(QStackedWidget):
     def _task_row(self, t: dict) -> QWidget:
         w = QFrame()
         w.setObjectName("TaskRow")
-        w.setStyleSheet("QFrame#TaskRow { border-top: 1px solid #EFEDE6; }")
         lay = QVBoxLayout(w)
         lay.setContentsMargins(0, 10, 0, 4)
         lay.setSpacing(6)
@@ -213,7 +222,7 @@ class NewMeetingPage(QStackedWidget):
         meta = QHBoxLayout()
         meta.setSpacing(8)
         meta.addWidget(priority_badge(t["priority"]))
-        meta.addWidget(label(f"👤 {t['assignee']}    📅 {t['deadline']}", "Small"))
+        meta.addWidget(label(f"👤 {tr(t['assignee'])}    📅 {tr(t['deadline'])}", "Small"))
         st = label(f"● {t['status']}", "Small")
         st.setStyleSheet(f"color: {STATUS_COLORS[t['status']]};")
         meta.addWidget(st)

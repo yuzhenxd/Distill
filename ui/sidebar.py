@@ -4,16 +4,12 @@ from PySide6.QtWidgets import (
     QPushButton, QVBoxLayout,
 )
 
+from core.i18n import tr
 from .widgets import label
 
 SIDEBAR_WIDTH = 240
 
-NAV_ITEMS = [
-    ("🎙️", "新建会议解析"),
-    ("📋", "智能任务看板"),
-    ("📤", "导出与同步"),
-    ("⚙️", "模型与 API 设置"),
-]
+NAV_ITEMS = ["会议", "翻译", "任务状态", "导出", "设置"]
 
 
 class Sidebar(QFrame):
@@ -39,7 +35,7 @@ class Sidebar(QFrame):
         top.addStretch()
         self.collapse_btn = QPushButton("«")
         self.collapse_btn.setObjectName("IconButton")
-        self.collapse_btn.setToolTip("收起侧边栏（Ctrl+B）")
+        self.collapse_btn.setToolTip(tr("收起侧边栏（Ctrl+B）"))
         self.collapse_btn.setFixedSize(28, 28)
         top.addWidget(self.collapse_btn)
         layout.addLayout(top)
@@ -47,8 +43,8 @@ class Sidebar(QFrame):
 
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
-        for i, (icon, text) in enumerate(NAV_ITEMS):
-            btn = QPushButton(f"{icon}  {text}")
+        for i, text in enumerate(NAV_ITEMS):
+            btn = QPushButton(tr(text))
             btn.setObjectName("NavButton")
             btn.setCheckable(True)
             btn.setCursor(Qt.PointingHandCursor)
@@ -57,7 +53,7 @@ class Sidebar(QFrame):
         self.group.idClicked.connect(self.page_selected.emit)
 
         layout.addSpacing(18)
-        layout.addWidget(label("历史会议", "SideSection"))
+        layout.addWidget(label(tr("历史会议"), "SideSection"))
         self.history = QListWidget()
         self.history.setObjectName("History")
         self.history.setVerticalScrollMode(QListWidget.ScrollPerPixel)
@@ -66,7 +62,7 @@ class Sidebar(QFrame):
         self.history.itemClicked.connect(lambda it: self.meeting_selected.emit(it.data(Qt.UserRole)))
         self.history.customContextMenuRequested.connect(self._history_menu)
         layout.addWidget(self.history, 1)
-        self.empty_hint = label("还没有会议记录", "Small")
+        self.empty_hint = label(tr("还没有会议记录"), "Small")
         self.empty_hint.setContentsMargins(10, 0, 0, 0)
         layout.addWidget(self.empty_hint)
 
@@ -89,7 +85,7 @@ class Sidebar(QFrame):
         if item is None:
             return
         menu = QMenu(self)
-        delete = menu.addAction("删除此会议")
+        delete = menu.addAction(tr("删除此会议"))
         if menu.exec(self.history.mapToGlobal(pos)) is delete:
             self.meeting_delete_requested.emit(item.data(Qt.UserRole))
 

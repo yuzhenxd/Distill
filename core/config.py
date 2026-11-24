@@ -15,13 +15,16 @@ class Settings:
     deepseek_model: str = "deepseek-chat"
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5:7b"
-    whisper_mode: str = "local"  # local | api
+    whisper_mode: str = "deepseek"  # deepseek | local | api
     whisper_model_size: str = "small"
     whisper_api_key: str = ""
     whisper_base_url: str = "https://api.openai.com/v1"
     whisper_api_model: str = "whisper-1"
     language: str = "zh"  # 空字符串表示自动检测
     feishu_webhook: str = ""
+    translate_target: str = "English"  # 实时翻译的目标语言，取 core.live.TARGET_LANGUAGES 的键
+    theme: str = "light"  # 配色方案：light 日间 | dark 夜间
+    ui_language: str = "zh"  # 界面语言：zh 中文 | en English（与上面的会议语言 language 无关）
 
 
 def load_settings() -> Settings:
