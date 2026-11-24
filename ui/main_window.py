@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 from core.config import Settings, load_settings, save_settings
 from core.demo import DEMO_SOURCE, DEMO_TRANSCRIPT
 from core.exporter import push_feishu
-from core.i18n import set_language, tr
+from core.i18n import UI_LANGUAGES, set_language, tr
 from core.live import LiveError, LiveSession, check_live_ready
 from core.llm import LLMError, list_ollama_models, test_connection
 from core.paths import data_dir
@@ -78,8 +78,10 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(980, 640)
 
         self.settings: Settings = load_settings()
-        set_language(self.settings.ui_language)
         apply_theme(QApplication.instance(), self.settings.theme)
+        if not self.settings.storage_dir:
+            self._ask_ui_language()  # 首次启动先选界面语言，接下来的存储位置提示就用所选语言显示
+        set_language(self.settings.ui_language)
         if not self.settings.storage_dir or not Path(self.settings.storage_dir).is_dir():
             self._ask_storage_dir()
         self.store = MeetingStore(self.settings.storage_dir)
@@ -399,6 +401,19 @@ class MainWindow(QMainWindow):
     def _rebuild_ui(self) -> None:
         self._build_ui()
         self.go(PAGE_SETTINGS)
+
+    def _ask_ui_language(self) -> None:
+        """首次启动时选择界面语言。此时还不知道用户读哪种语言，提示文字中英并列。"""
+        box = QMessageBox()
+        box.setIcon(QMessageBox.Question)
+        box.setWindowTitle("Distill")
+        box.setText("请选择界面语言\nChoose your language")
+        box.setInformativeText("之后可以在「设置 → 外观」中更改。\nYou can change this later in Settings → Appearance.")
+        buttons = {box.addButton(name, QMessageBox.AcceptRole): code for name, code in UI_LANGUAGES}
+        box.setDefaultButton(next(b for b, c in buttons.items() if c == self.settings.ui_language))
+        box.exec()
+        # 直接关掉窗口时没有点任何按钮，保留当前语言
+        self.settings = replace(self.settings, ui_language=buttons.get(box.clickedButton(), self.settings.ui_language))
 
     def _ask_storage_dir(self) -> None:
         """首次启动，或上次选的文件夹已经不在（如移动硬盘未接入）时，请用户选择会议记录的存放位置。"""
