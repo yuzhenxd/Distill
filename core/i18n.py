@@ -282,4 +282,26 @@ EN = {
     "云端转写失败：{error}": "Cloud transcription failed: {error}",
     "正在上传音频到云端 Whisper 转写…": "Uploading audio to cloud Whisper…",
     "云端转写完成": "Cloud transcription complete",
+
+    # ---- 存储位置 ----
+    "数据存储": "Storage",
+    "历史会议和任务保存在下面的文件夹里。更改后，现有记录会一并移过去。":
+        "Meetings and tasks are saved in the folder below. If you change it, existing records move with it.",
+    "更改…": "Change…",
+    "选择存储文件夹": "Choose a storage folder",
+    "选择存储位置": "Choose where to store",
+    "欢迎使用 Distill！请先选择会议记录的存储位置。": "Welcome to Distill! First, choose where to store your meetings.",
+    "找不到之前选择的存储文件夹：\n{path}\n\n请重新选择会议记录的存储位置。":
+        "The storage folder you chose before can't be found:\n{path}\n\nChoose where to store your meetings again.",
+    "默认位置：{path}\n之后可以在「设置 → 数据存储」中更改。":
+        "Default: {path}\nYou can change this later in Settings → Storage.",
+    "选择文件夹…": "Choose folder…",
+    "使用默认位置": "Use default",
+    "无法使用该文件夹": "Can't use this folder",
+    "没有写入「{path}」的权限，请换一个文件夹。": "You don't have permission to write to \"{path}\". Choose another folder.",
+    "正在录音或处理中，请结束后再更改存储位置": "Recording or processing. Change the storage location when it's done.",
+    "更改存储位置失败": "Couldn't change storage location",
+    "移动会议记录时出错：{error}": "Error moving meeting records: {error}",
+    "该文件夹中已有会议记录，已改为使用这些记录": "That folder already has meeting records. Now using those.",
+    "会议记录已移到：{path}": "Meeting records moved to: {path}",
 }

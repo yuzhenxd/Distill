@@ -2,7 +2,7 @@ from dataclasses import replace
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QButtonGroup, QComboBox, QFormLayout, QHBoxLayout, QLineEdit, QPushButton, QRadioButton,
+    QButtonGroup, QComboBox, QFileDialog, QFormLayout, QHBoxLayout, QLineEdit, QPushButton, QRadioButton,
     QVBoxLayout, QWidget,
 )
 
@@ -36,6 +36,7 @@ class SettingsPage(QWidget):
     ollama_models_requested = Signal(str)    # base_url
     theme_changed = Signal(str)              # light | dark，点选后立即生效并保存
     ui_language_changed = Signal(str)        # zh | en，点选后立即生效并保存
+    storage_dir_changed = Signal(str)        # 新选的会议记录文件夹，选好后立即生效并保存
 
     def __init__(self, settings: Settings):
         super().__init__()
@@ -78,6 +79,19 @@ class SettingsPage(QWidget):
         radios.addStretch()
         f.addRow(tr("界面语言"), radios)
         lay.addLayout(f)
+        body.addWidget(frame)
+
+        # ---- 数据存储 ----
+        frame, lay = card()
+        lay.addWidget(label(tr("数据存储"), "H3"))
+        lay.addWidget(label(tr("历史会议和任务保存在下面的文件夹里。更改后，现有记录会一并移过去。"), "Muted", wrap=True))
+        row = QHBoxLayout()
+        self.storage_path = label(settings.storage_dir, wrap=True, selectable=True)
+        change = QPushButton(tr("更改…"))
+        change.clicked.connect(self._choose_storage_dir)
+        row.addWidget(self.storage_path, 1)
+        row.addWidget(change)
+        lay.addLayout(row)
         body.addWidget(frame)
 
         body.addSpacing(6)
@@ -283,6 +297,14 @@ class SettingsPage(QWidget):
         r.blockSignals(True)
         r.setChecked(True)
         r.blockSignals(False)
+
+    def _choose_storage_dir(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, tr("选择存储文件夹"), self.settings.storage_dir)
+        if folder:
+            self.storage_dir_changed.emit(folder)
+
+    def set_storage_dir(self, folder: str) -> None:
+        self.storage_path.setText(folder)
 
     def set_ollama_models(self, models: list[str]) -> None:
         current = self.ol_model.currentText()

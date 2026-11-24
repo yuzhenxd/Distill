@@ -6,7 +6,8 @@
 - 语音转写：本地 faster-whisper（可选安装），或兼容 OpenAI 的 Whisper API
 - 智能任务看板：To Do / In Progress / Done 三列，可改状态、新增、删除
 - 导出：JSON、Markdown、飞书消息（可直接推送到飞书机器人 Webhook）
-- 历史会议保存在本机 SQLite：Windows 在 `%APPDATA%\Distill`，macOS 在 `~/Library/Application Support/Distill`（旧版的 MeetingFlowAI 目录会在首次启动时自动迁移）
+- 历史会议保存在本机 SQLite，首次启动时选择存放的文件夹，之后可在「设置 → 数据存储」中更改，现有记录会一并移过去
+- 设置文件固定在 Windows 的 `%APPDATA%\Distill`、macOS 的 `~/Library/Application Support/Distill`，这也是会议记录的默认位置（旧版的 MeetingFlowAI 目录会在首次启动时自动迁移）
 
 ## 下载
 

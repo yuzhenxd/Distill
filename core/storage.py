@@ -1,18 +1,28 @@
 import json
+import shutil
 import sqlite3
 import uuid
 from datetime import datetime
+from pathlib import Path
 
-from .paths import data_dir
+DB_NAME = "meetings.db"
 
-DB_FILE = data_dir() / "meetings.db"
+
+def relocate(old_dir: str, new_dir: str) -> bool:
+    """把数据库从旧文件夹移到新文件夹。新文件夹里已有数据库时不移动、直接沿用它，返回 True。"""
+    src, dst = Path(old_dir) / DB_NAME, Path(new_dir) / DB_NAME
+    if dst.exists():
+        return True
+    if src.exists():
+        shutil.move(src, dst)  # 跨磁盘时先复制再删除
+    return False
 
 
 class MeetingStore:
     """会议记录的 SQLite 持久化。只在主线程使用。"""
 
-    def __init__(self, path=DB_FILE):
-        self.conn = sqlite3.connect(str(path))
+    def __init__(self, folder: str):
+        self.conn = sqlite3.connect(str(Path(folder) / DB_NAME))
         self.conn.row_factory = sqlite3.Row
         self.conn.execute(
             """CREATE TABLE IF NOT EXISTS meetings (

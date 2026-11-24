@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QStackedWidget,
+    QApplication, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QStackedWidget,
     QVBoxLayout, QWidget,
 )
 
@@ -17,8 +17,9 @@ from core.exporter import push_feishu
 from core.i18n import set_language, tr
 from core.live import LiveError, LiveSession, check_live_ready
 from core.llm import LLMError, list_ollama_models, test_connection
+from core.paths import data_dir
 from core.pipeline import process_file, process_text
-from core.storage import MeetingStore
+from core.storage import MeetingStore, relocate
 from core.transcriber import TranscribeError
 from core.workers import Worker
 from .export_page import ExportPage
@@ -79,7 +80,9 @@ class MainWindow(QMainWindow):
         self.settings: Settings = load_settings()
         set_language(self.settings.ui_language)
         apply_theme(QApplication.instance(), self.settings.theme)
-        self.store = MeetingStore()
+        if not self.settings.storage_dir or not Path(self.settings.storage_dir).is_dir():
+            self._ask_storage_dir()
+        self.store = MeetingStore(self.settings.storage_dir)
         self.current: dict | None = None
         self.busy = False
         self.live: LiveSession | None = None
@@ -160,6 +163,7 @@ class MainWindow(QMainWindow):
         self.settings_page.ollama_models_requested.connect(self.fetch_ollama_models)
         self.settings_page.theme_changed.connect(self.set_theme)
         self.settings_page.ui_language_changed.connect(self.set_ui_language)
+        self.settings_page.storage_dir_changed.connect(self.change_storage_dir)
 
         self.export_page.set_webhook(self.settings.feishu_webhook)
         self.set_current(self.current)
@@ -395,6 +399,62 @@ class MainWindow(QMainWindow):
     def _rebuild_ui(self) -> None:
         self._build_ui()
         self.go(PAGE_SETTINGS)
+
+    def _ask_storage_dir(self) -> None:
+        """首次启动，或上次选的文件夹已经不在（如移动硬盘未接入）时，请用户选择会议记录的存放位置。"""
+        default = str(data_dir())
+        if self.settings.storage_dir:
+            text = tr("找不到之前选择的存储文件夹：\n{path}\n\n请重新选择会议记录的存储位置。", path=self.settings.storage_dir)
+        else:
+            text = tr("欢迎使用 Distill！请先选择会议记录的存储位置。")
+        while True:
+            box = QMessageBox()
+            box.setIcon(QMessageBox.Question)
+            box.setWindowTitle(tr("选择存储位置"))
+            box.setText(text)
+            box.setInformativeText(tr("默认位置：{path}\n之后可以在「设置 → 数据存储」中更改。", path=default))
+            choose = box.addButton(tr("选择文件夹…"), QMessageBox.ActionRole)
+            box.setDefaultButton(box.addButton(tr("使用默认位置"), QMessageBox.AcceptRole))
+            box.exec()
+            if box.clickedButton() is not choose:
+                folder = default
+                break
+            folder = QFileDialog.getExistingDirectory(None, tr("选择存储文件夹"), str(Path.home()))
+            if folder and os.access(folder, os.W_OK):
+                break
+            if folder:
+                QMessageBox.warning(None, tr("无法使用该文件夹"), tr("没有写入「{path}」的权限，请换一个文件夹。", path=folder))
+        if not self.settings.storage_dir:
+            relocate(default, folder)  # 旧版本的记录都在默认位置，升级后随所选文件夹一起移过去
+        self.settings = replace(self.settings, storage_dir=folder)
+        save_settings(self.settings)
+
+    def change_storage_dir(self, folder: str) -> None:
+        old = self.settings.storage_dir
+        if Path(folder) == Path(old):
+            return
+        if self.live or self.live_summarizing or self.busy:
+            self.toast.show_message(tr("正在录音或处理中，请结束后再更改存储位置"))
+            return
+        if not os.access(folder, os.W_OK):
+            QMessageBox.warning(self, tr("无法使用该文件夹"), tr("没有写入「{path}」的权限，请换一个文件夹。", path=folder))
+            return
+        self.store.close()
+        try:
+            existing = relocate(old, folder)
+        except OSError as e:
+            self.store = MeetingStore(old)
+            QMessageBox.warning(self, tr("更改存储位置失败"), tr("移动会议记录时出错：{error}", error=e))
+            return
+        self.store = MeetingStore(folder)
+        self._persist(replace(self.settings, storage_dir=folder))
+        self.settings_page.set_storage_dir(folder)
+        if existing:
+            self.set_current(None)  # 换成了新文件夹里原有的记录，当前会议已不在其中
+            self.toast.show_message(tr("该文件夹中已有会议记录，已改为使用这些记录"))
+        else:
+            self.refresh_history()
+            self.toast.show_message(tr("会议记录已移到：{path}", path=folder))
 
     def save_webhook(self, url: str) -> None:
         self._persist(replace(self.settings, feishu_webhook=url))

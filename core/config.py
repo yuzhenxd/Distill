@@ -25,6 +25,7 @@ class Settings:
     translate_target: str = "English"  # 实时翻译的目标语言，取 core.live.TARGET_LANGUAGES 的键
     theme: str = "light"  # 配色方案：light 日间 | dark 夜间
     ui_language: str = "zh"  # 界面语言：zh 中文 | en English（与上面的会议语言 language 无关）
+    storage_dir: str = ""  # 会议记录数据库所在的文件夹；空表示还没选过，首次启动时询问
 
 
 def load_settings() -> Settings:
