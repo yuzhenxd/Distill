@@ -9,6 +9,15 @@ import sys
 import threading
 import webbrowser
 
+# Windows 控制台可能是 cp1252/GBK，直接 print 中文会 UnicodeEncodeError 崩溃，
+# 必须在任何输出之前把 stdout/stderr 重配为 UTF-8 并容错
+for _stream in (sys.stdout, sys.stderr):
+    if _stream is not None and hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
 # 确保 PyInstaller 把运行时依赖一并打进来（app.py 是以数据文件形式携带的，
 # 静态分析不到它的 import，这里显式引用一次）
 import dotenv  # noqa: F401
