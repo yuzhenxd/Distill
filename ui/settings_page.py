@@ -13,6 +13,7 @@ from .widgets import Page, card, label
 
 WHISPER_SIZES = ["tiny", "base", "small", "medium", "large-v3"]
 LANGUAGES = [("中文", "zh"), ("英文", "en"), ("自动检测", "")]
+DEEPSEEK_PLATFORM_URL = "https://platform.deepseek.com/"  # DeepSeek 开放平台：注册、充值、创建 API Key
 
 
 def _form() -> QFormLayout:
@@ -122,6 +123,10 @@ class SettingsPage(QWidget):
         self.ds_model.addItems(["deepseek-chat", "deepseek-reasoner"])
         self.ds_model.setCurrentText(settings.deepseek_model)
         f.addRow("API Key", self.ds_key)
+        buy = label(f'{tr("还没有 API Key？")}<a href="{DEEPSEEK_PLATFORM_URL}">{tr("前往 DeepSeek 开放平台购买")}</a>',
+                    "Muted")
+        buy.setOpenExternalLinks(True)  # 用系统默认浏览器打开
+        f.addRow("", buy)
         f.addRow("Base URL", self.ds_url)
         f.addRow(tr("模型"), self.ds_model)
         self.deepseek_box.setLayout(f)

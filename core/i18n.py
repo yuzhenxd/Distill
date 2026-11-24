@@ -191,6 +191,8 @@ EN = {
     "模型与 API": "Models & API",
     "大模型引擎": "Language model",
     "DeepSeek 云端 API": "DeepSeek cloud API",
+    "还没有 API Key？": "No API key yet? ",
+    "前往 DeepSeek 开放平台购买": "Buy one on the DeepSeek Platform",
     "本地 Ollama（数据不出本机）": "Local Ollama (data stays on this computer)",
     "模型": "Model",
     "刷新本地模型": "Refresh local models",
