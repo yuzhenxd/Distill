@@ -122,7 +122,7 @@ class LivePage(QWidget):
 
     def _show_empty(self) -> None:
         clear_layout(self.transcript)
-        self.transcript.addWidget(EmptyState("🌐", tr("还没有开始"), tr("点击「开始录音」，说话内容会逐段显示原文与译文。")))
+        self.transcript.addWidget(EmptyState(tr("还没有开始"), tr("点击「开始录音」，说话内容会逐段显示原文与译文。")))
 
     def set_recording(self) -> None:
         self.recording = True

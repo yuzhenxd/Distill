@@ -72,7 +72,7 @@ class Toast(QLabel):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MeetingFlow AI")
+        self.setWindowTitle("Distill")
         self.resize(1320, 840)
         self.setMinimumSize(980, 640)
 
@@ -302,7 +302,7 @@ class MainWindow(QMainWindow):
         if sys.platform == "darwin":
             hint = (
                 "macOS 没有允许本程序使用麦克风，或麦克风被静音。\n\n"
-                "请打开「系统设置 → 隐私与安全性 → 麦克风」，打开 MeetingFlow AI 的开关"
+                "请打开「系统设置 → 隐私与安全性 → 麦克风」，打开 Distill 的开关"
                 "（从终端运行源码时打开「终端」或启动它的程序），然后重启本程序再录音。"
             )
         elif sys.platform == "win32":

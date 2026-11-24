@@ -83,14 +83,12 @@ class Page(QScrollArea):
 
 
 class EmptyState(QWidget):
-    def __init__(self, icon: str, title: str, hint: str):
+    def __init__(self, title: str, hint: str):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 80, 0, 80)
         layout.setSpacing(8)
-        for text, name, size in ((icon, "", 40), (title, "H3", 0), (hint, "Muted", 0)):
+        for text, name in ((title, "H3"), (hint, "Muted")):
             w = label(text, name, wrap=True)
             w.setAlignment(Qt.AlignCenter)
-            if size:
-                w.setStyleSheet(f"font-size: {size}px;")
             layout.addWidget(w)

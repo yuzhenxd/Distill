@@ -1,5 +1,8 @@
 import json
+import ssl
 import urllib.request
+
+import certifi
 
 from .i18n import tr
 
@@ -84,7 +87,8 @@ def push_feishu(webhook: str, payload: dict) -> str:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        ctx = ssl.create_default_context(cafile=certifi.where())  # 打包后的 macOS 版找不到系统证书
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except OSError as e:
         raise RuntimeError(tr("无法连接飞书：{error}", error=e)) from None

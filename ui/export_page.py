@@ -55,7 +55,7 @@ class ExportPage(QWidget):
         body = self.page.body
         clear_layout(body)
         if self.meeting is None:
-            body.addWidget(EmptyState("📤", tr("还没有可导出的会议"), tr("解析一场会议后，可在这里导出 JSON / Markdown 或推送到飞书。")))
+            body.addWidget(EmptyState(tr("还没有可导出的会议"), tr("解析一场会议后，可在这里导出 JSON / Markdown 或推送到飞书。")))
             body.addStretch()
             return
 

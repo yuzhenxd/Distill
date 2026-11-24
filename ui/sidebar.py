@@ -29,7 +29,7 @@ class Sidebar(QFrame):
 
         top = QHBoxLayout()
         top.setContentsMargins(8, 0, 0, 0)
-        logo = label("✳ MeetingFlow AI", "Logo")
+        logo = label("Distill", "Logo")
         logo.setStyleSheet("font-size: 17px; font-weight: 600;")
         top.addWidget(logo)
         top.addStretch()

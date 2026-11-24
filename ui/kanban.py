@@ -140,7 +140,7 @@ class KanbanPage(QWidget):
         body = self.page.body
         clear_layout(body)
         if self.meeting is None:
-            body.addWidget(EmptyState("📋", tr("还没有打开任何会议"), tr("先在「会议」中解析一场会议，或从左侧历史记录中选择。")))
+            body.addWidget(EmptyState(tr("还没有打开任何会议"), tr("先在「会议」中解析一场会议，或从左侧历史记录中选择。")))
             body.addStretch()
             return
 

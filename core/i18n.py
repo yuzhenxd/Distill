@@ -45,10 +45,10 @@ EN = {
     "实时翻译记录 {time}": "Live translation {time}",
     "实时录音 · 译为 {target}": "Live recording · into {target}",
     "macOS 没有允许本程序使用麦克风，或麦克风被静音。\n\n"
-    "请打开「系统设置 → 隐私与安全性 → 麦克风」，打开 MeetingFlow AI 的开关"
+    "请打开「系统设置 → 隐私与安全性 → 麦克风」，打开 Distill 的开关"
     "（从终端运行源码时打开「终端」或启动它的程序），然后重启本程序再录音。":
         "macOS has not allowed this app to use the microphone, or the microphone is muted.\n\n"
-        "Open System Settings → Privacy & Security → Microphone and turn on MeetingFlow AI "
+        "Open System Settings → Privacy & Security → Microphone and turn on Distill "
         "(when running from source, turn on Terminal or whichever app launched it), "
         "then restart this app and record again.",
     "Windows 没有允许桌面应用使用麦克风，或麦克风被静音。\n\n"
@@ -91,10 +91,10 @@ EN = {
     "选择会议文件": "Choose a meeting file",
     "不支持的文件格式：{name}": "Unsupported file type: {name}",
     "今天要整理哪场会议？": "Which meeting shall we go over today?",
-    "上传录音或会议文本，MeetingFlow 会为你提炼摘要、关键决策，并把行动项排进任务看板。":
-        "Upload a recording or transcript. MeetingFlow writes the summary and key decisions, "
+    "上传录音或会议文本，Distill 会为你提炼摘要、关键决策，并把行动项排进任务看板。":
+        "Upload a recording or transcript. Distill writes the summary and key decisions, "
         "and puts the action items on the task board.",
-    "⚡ 加载内置演示会议": "⚡ Load the demo meeting",
+    "加载内置演示会议": "Load the demo meeting",
     "准备中…": "Preparing…",
     "＋ 新建解析": "＋ New analysis",
     "会议摘要": "Summary",
@@ -105,7 +105,7 @@ EN = {
     "在任务看板中管理 →": "Manage on the task board →",
     "会议中没有识别到明确的行动项。": "No clear action items were found in this meeting.",
     "原文与译文 · 译为 {target}": "Transcript and translation · into {target}",
-    "📤 导出与同步": "📤 Export & sync",
+    "导出与同步": "Export & sync",
     "待定": "TBD",
     "未定": "Not set",
 

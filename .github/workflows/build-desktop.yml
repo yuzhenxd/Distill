@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact: MeetingFlowAI-windows-x64.zip
+            artifact: Distill-windows-x64.zip
           - os: macos-latest
-            artifact: MeetingFlowAI-macos-arm64.zip
+            artifact: Distill-macos-arm64.zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -34,15 +34,15 @@ jobs:
 
       - name: Build (Windows, single exe)
         if: runner.os == 'Windows'
-        run: pyinstaller --noconfirm --onefile --windowed --name "MeetingFlow AI" --icon assets/icon.ico --add-data "assets/icon.png:assets" main.py
+        run: pyinstaller --noconfirm --onefile --windowed --name "Distill" --icon assets/icon.ico --add-data "assets/icon.png:assets" main.py
 
       - name: Build (macOS, .app)
         if: runner.os == 'macOS'
         run: |
-          pyinstaller --noconfirm --windowed --name "MeetingFlow AI" --icon assets/icon.icns --add-data "assets/icon.png:assets" --osx-bundle-identifier ai.meetingflow.desktop main.py
+          pyinstaller --noconfirm --windowed --name "Distill" --icon assets/icon.icns --add-data "assets/icon.png:assets" --osx-bundle-identifier ai.distill.desktop main.py
           # 没有麦克风用途说明时 macOS 不弹权限窗口，录到的全是静音；改了 Info.plist 要重新签名
-          plutil -insert NSMicrophoneUsageDescription -string "MeetingFlow AI 需要使用麦克风进行实时转写与翻译。" "dist/MeetingFlow AI.app/Contents/Info.plist"
-          codesign --force --deep --sign - "dist/MeetingFlow AI.app"
+          plutil -insert NSMicrophoneUsageDescription -string "Distill 需要使用麦克风进行实时转写与翻译。" "dist/Distill.app/Contents/Info.plist"
+          codesign --force --deep --sign - "dist/Distill.app"
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -50,11 +50,11 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          $p = Start-Process -FilePath "dist/MeetingFlow AI.exe" -PassThru
+          $p = Start-Process -FilePath "dist/Distill.exe" -PassThru
           Start-Sleep -Seconds 25
           if ($p.HasExited) { throw "App exited early with code $($p.ExitCode)" }
           Stop-Process -Id $p.Id -Force
-          Get-Process -Name "MeetingFlow AI" -ErrorAction SilentlyContinue | Stop-Process -Force
+          Get-Process -Name "Distill" -ErrorAction SilentlyContinue | Stop-Process -Force
           Write-Host "Smoke test passed."
 
       - name: Smoke test (macOS)
@@ -62,7 +62,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          "dist/MeetingFlow AI.app/Contents/MacOS/MeetingFlow AI" > app.log 2>&1 &
+          "dist/Distill.app/Contents/MacOS/Distill" > app.log 2>&1 &
           PID=$!
           sleep 20
           if ! kill -0 $PID 2>/dev/null; then cat app.log; echo "App exited early"; exit 1; fi
@@ -72,11 +72,11 @@ jobs:
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path "dist/MeetingFlow AI.exe" -DestinationPath "${{ matrix.artifact }}"
+        run: Compress-Archive -Path "dist/Distill.exe" -DestinationPath "${{ matrix.artifact }}"
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
-        run: ditto -c -k --keepParent "dist/MeetingFlow AI.app" "${{ matrix.artifact }}"
+        run: ditto -c -k --keepParent "dist/Distill.app" "${{ matrix.artifact }}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -99,5 +99,5 @@ jobs:
         run: >
           gh release create "${{ github.ref_name }}" artifacts/*.zip
           --repo "${{ github.repository }}"
-          --title "MeetingFlow AI Desktop ${{ github.ref_name }}"
-          --notes "PySide6 原生桌面版。Windows 解压后双击 MeetingFlow AI.exe；macOS（Apple 芯片）解压后右键「打开」MeetingFlow AI.app。"
+          --title "Distill ${{ github.ref_name }}"
+          --notes "PySide6 原生桌面版。Windows 解压后双击 Distill.exe；macOS（Apple 芯片）解压后右键「打开」Distill.app。"

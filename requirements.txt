@@ -2,6 +2,8 @@
 # 6.12.0 在 macOS 上实测找不到自带的 Qt 平台插件，暂时锁定在 6.12 以下。
 PySide6-Essentials>=6.6,<6.12
 openai>=1.40
+# HTTPS 证书：打包后的 macOS 版找不到系统证书，语音识别和飞书推送靠它校验
+certifi
 # 实时翻译录音（自带 PortAudio）；DeepSeek 语音识别前把 mp3 / m4a 解码成 WAV（自带 FFmpeg）
 sounddevice>=0.4
 av>=12

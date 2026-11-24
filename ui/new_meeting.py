@@ -29,15 +29,12 @@ class DropZone(QFrame):
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
         layout.addStretch()
-        for text, name, style in (
-            ("⬆", "", "font-size: 34px; color: #D97757;"),
-            (tr("拖拽会议录音或文本到这里"), "H3", ""),
-            (tr("或点击选择文件 · 支持 .mp3 / .wav / .m4a / .txt / .md"), "Muted", ""),
+        for text, name in (
+            (tr("拖拽会议录音或文本到这里"), "H3"),
+            (tr("或点击选择文件 · 支持 .mp3 / .wav / .m4a / .txt / .md"), "Muted"),
         ):
             w = label(text, name)
             w.setAlignment(Qt.AlignCenter)
-            if style:
-                w.setStyleSheet(style)
             layout.addWidget(w)
         layout.addStretch()
 
@@ -91,7 +88,7 @@ class NewMeetingPage(QStackedWidget):
         body.addStretch(2)
         title = label(tr("今天要整理哪场会议？"), "H1")
         title.setAlignment(Qt.AlignCenter)
-        sub = label(tr("上传录音或会议文本，MeetingFlow 会为你提炼摘要、关键决策，并把行动项排进任务看板。"), "Muted", wrap=True)
+        sub = label(tr("上传录音或会议文本，Distill 会为你提炼摘要、关键决策，并把行动项排进任务看板。"), "Muted", wrap=True)
         sub.setAlignment(Qt.AlignCenter)
         body.addWidget(title)
         body.addWidget(sub)
@@ -103,7 +100,7 @@ class NewMeetingPage(QStackedWidget):
 
         row = QHBoxLayout()
         row.addStretch()
-        self.demo_btn = QPushButton(tr("⚡ 加载内置演示会议"))
+        self.demo_btn = QPushButton(tr("加载内置演示会议"))
         self.demo_btn.setObjectName("Pill")
         self.demo_btn.setCursor(Qt.PointingHandCursor)
         self.demo_btn.clicked.connect(self.demo_requested.emit)
@@ -202,7 +199,7 @@ class NewMeetingPage(QStackedWidget):
                 lay.addWidget(segment_widget(seg))
             body.addWidget(frame)
 
-        export_btn = QPushButton(tr("📤 导出与同步"))
+        export_btn = QPushButton(tr("导出与同步"))
         export_btn.setObjectName("Ghost")
         export_btn.clicked.connect(self.open_export.emit)
         body.addWidget(export_btn, 0, Qt.AlignLeft)

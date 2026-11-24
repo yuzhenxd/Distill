@@ -12,7 +12,7 @@ ICON = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "assets
 
 def main() -> None:
     app = QApplication(sys.argv)
-    app.setApplicationName("MeetingFlow AI")
+    app.setApplicationName("Distill")
     app.setWindowIcon(QIcon(str(ICON)))
     app.setStyle("Fusion")
     window = MainWindow()  # 按设置里的配色方案应用调色板和样式表

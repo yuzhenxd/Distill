@@ -1,11 +1,13 @@
 import json
 import os
+import ssl
 import urllib.error
 import urllib.request
 import uuid
 from pathlib import Path
 from typing import Callable
 
+import certifi
 import openai
 from openai import OpenAI
 
@@ -91,7 +93,9 @@ def deepseek_asr(wav: bytes, s: Settings) -> str:
         "Content-Type": f"multipart/form-data; boundary={boundary}",
     })
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        # 打包后的 macOS 版找不到系统证书，用 certifi 自带的证书校验 HTTPS
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
             return json.loads(resp.read().decode("utf-8")).get("text", "").strip()
     except urllib.error.HTTPError as e:
         if e.code == 401:
