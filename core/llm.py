@@ -40,7 +40,16 @@ SYSTEM_PROMPT = """你是一名专业的会议纪要助理。阅读用户提供�
 1. 今天是 {today}。原文中“明天”“下周五”等相对时间请换算成具体日期。
 2. source_quote 必须逐字摘自原文，不要改写。
 3. status 依据原文判断：已经完成的为 Done，正在做的为 In Progress，其余为 To Do。
-4. 不要编造原文没有的任务或决策。"""
+4. 不要编造原文没有的任务或决策。
+5. {output_rule}"""
+
+# 按界面语言决定纪要的输出语言；priority、status 和“待定”“未定”是存储值，界面显示时再翻译
+OUTPUT_RULES = {
+    "zh": "meeting_title、meeting_summary、key_decisions、task_title 一律用简体中文书写，无论会议原文是什么语言。",
+    "en": ("meeting_title、meeting_summary、key_decisions、task_title 一律用英文（English）书写，无论会议原文是什么语言；"
+           "标题不超过 10 个单词，摘要 80~200 个单词。人名保持原文写法。"
+           "priority、status 以及“待定”“未定”仍按上面的固定取值填写，不要翻译。"),
+}
 
 
 class LLMError(Exception):
@@ -79,7 +88,8 @@ def analyze_transcript(text: str, s: Settings) -> dict:
     content = _chat(
         s,
         [
-            {"role": "system", "content": SYSTEM_PROMPT.replace("{today}", date.today().isoformat())},
+            {"role": "system", "content": SYSTEM_PROMPT.replace("{today}", date.today().isoformat())
+                                                       .replace("{output_rule}", OUTPUT_RULES[s.ui_language])},
             {"role": "user", "content": f"以下是会议记录：\n\n{text}"},
         ],
         response_format={"type": "json_object"},
