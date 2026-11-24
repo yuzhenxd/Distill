@@ -1,0 +1,7 @@
+streamlit>=1.36.0
+openai>=1.40.0
+pydantic>=2.7.0
+python-dotenv>=1.0.1
+
+# 可选：本地音频转写（体积较大，课堂演示可不装，系统会自动降级为模拟转写）
+# faster-whisper>=1.0.0

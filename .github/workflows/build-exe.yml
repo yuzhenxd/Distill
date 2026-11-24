@@ -1,0 +1,79 @@
+name: Build Windows EXE
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build EXE with PyInstaller
+        run: >
+          pyinstaller --noconfirm --onedir --name MeetingFlowAI
+          --collect-all streamlit
+          --copy-metadata streamlit
+          --collect-all openai
+          --collect-all pydantic
+          --collect-all dotenv
+          --hidden-import streamlit.web.cli
+          --add-data "app.py;."
+          --add-data "agent.py;."
+          --add-data "schemas.py;."
+          --add-data ".env.example;."
+          run_app.py
+
+      - name: Smoke test (exe boots and serves HTTP)
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "dist/MeetingFlowAI/MeetingFlowAI.exe" -PassThru
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try {
+              $resp = Invoke-WebRequest -Uri "http://localhost:8501" -UseBasicParsing -TimeoutSec 3
+              if ($resp.StatusCode -eq 200) { $ok = $true; break }
+            } catch { }
+          }
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "EXE did not serve HTTP 200 on port 8501" }
+          Write-Host "Smoke test passed."
+
+      - name: Zip dist folder
+        shell: pwsh
+        run: Compress-Archive -Path dist/MeetingFlowAI -DestinationPath MeetingFlowAI-windows.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeetingFlowAI-windows
+          path: MeetingFlowAI-windows.zip
+
+      - name: Publish release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}" MeetingFlowAI-windows.zip
+          --title "MeetingFlow AI ${{ github.ref_name }} (Windows)"
+          --notes "解压 zip 后双击 MeetingFlowAI/MeetingFlowAI.exe 运行，浏览器会自动打开 http://localhost:8501。DeepSeek API Key 在左侧边栏填写。"
